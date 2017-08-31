@@ -4,6 +4,7 @@
 #include <cmath> // pow()
 #include <ctime> // Was being used for testing purposes
 #include <iomanip> // setbase() in std::cout
+#include <inttypes.h>
 #include "stat.h"
 
 #define two255 65025
@@ -12,7 +13,7 @@
 /*------------------------------------------------
 Converts 64-bit integer to a byte array
 ------------------------------------------------*/
-unsigned char* dectobytes(__int64 value, unsigned char *bytearray) {
+unsigned char* dectobytes(int64_t value, unsigned char *bytearray) {
   int j = 3;
   for (size_t i=0; i<4; i++) {
     bytearray[j] = value & 0xFF; // Mask with a byte
@@ -24,7 +25,7 @@ unsigned char* dectobytes(__int64 value, unsigned char *bytearray) {
 /*------------------------------------------------
 Sums each byte to a sequential power of 255
 ------------------------------------------------*/
-void power255(unsigned char* bytevals, __int64 &value) {
+void power255(unsigned char* bytevals, int64_t &value) {
   value = 0;
   for (size_t i = 0; i < 5; i++) {
     value += bytevals[i] * (pow(255.0, i)); // Keep adding array elements * 255^i
@@ -34,7 +35,7 @@ void power255(unsigned char* bytevals, __int64 &value) {
 MAIN BODY
 ------------------------------------------------*/
 int main(int argc, char const *argv[]) {
-  __int64 value255 = 0;
+  int64_t value255 = 0;
   unsigned char *bytevals = new unsigned char[5];
   unsigned char *bytevals255 = new unsigned char[4];
   unsigned char *remaining;

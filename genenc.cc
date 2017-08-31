@@ -4,6 +4,7 @@
 #include <cmath>
 #include <climits>
 #include <iomanip>
+#include <inttypes.h>
 #include "stat.h"
 
 #define two255 65025
@@ -13,8 +14,8 @@
 /*------------------------------------------------
 Works down orders of 255
 ------------------------------------------------*/
-unsigned char* workdown(__int64 value255, unsigned char *bytearray) {
-  __int64 j = 254;
+unsigned char* workdown(int64_t value255, unsigned char *bytearray) {
+  int64_t j = 254;
   /* N.B. Repetition of code is to prevent having
   to calculate 255^X god knows how many times */
   if(value255 > four255) {
@@ -42,8 +43,8 @@ unsigned char* workdown(__int64 value255, unsigned char *bytearray) {
 /*------------------------------------------------
 Coverts char array to decimal
 ------------------------------------------------*/
-__int64 bytestodec(unsigned char* bytevals) {
-  __int64 temp = 0;
+int64_t bytestodec(unsigned char* bytevals) {
+  int64_t temp = 0;
   int j = 3;
   for (size_t i = 0; i < 4; i++) {
       temp += bytevals[j] * pow(256.0,i); // Sum: array_element[j] * 256^i
@@ -55,7 +56,7 @@ __int64 bytestodec(unsigned char* bytevals) {
 MAIN BODY
 ------------------------------------------------*/
 int main(int argc, char const *argv[]) {
-  __int64 value = 0; // 4244897280 MAX VAL
+  int64_t value = 0; // 4244897280 MAX VAL
   unsigned char *bytevals = new unsigned char[4];
   unsigned char *bytevals255 = new unsigned char[5];
   unsigned char *remaining;
