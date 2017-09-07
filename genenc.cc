@@ -5,7 +5,6 @@
 #include <climits>
 #include <iomanip>
 #include <inttypes.h>
-#include "stat.h"
 
 #define two255 65025
 #define three255 16581375
@@ -57,6 +56,7 @@ MAIN BODY
 ------------------------------------------------*/
 int main(int argc, char const *argv[]) {
   int64_t value = 0; // 4244897280 MAX VAL
+  int64_t filesize;
   unsigned char *bytevals = new unsigned char[4];
   unsigned char *bytevals255 = new unsigned char[5];
   unsigned char *remaining;
@@ -67,13 +67,11 @@ int main(int argc, char const *argv[]) {
     std::cout << "Usage: program <input_file> <output_file>" << '\n';
     return 1;
   }
-  struct stat results;
-  if (stat(argv[1], &results) != 0) { // Gathing input file info into results struct
-    std::cout << "Cannot gather input file information" << '\n';
-    return 1;
-  }
   std::ifstream inputfile;
   inputfile.open(argv[1], std::ios::binary); // Input file as binary
+  inputfile.seekg(0, inputfile.end);
+  filesize = inputfile.tellg();
+  inputfile.seekg(0, inputfile.beg);
   std::ofstream encfile;
   encfile.open(argv[2], std::ios::binary | std::ios::trunc); // Output stream as binary & truncate
   if(!encfile.is_open() || !inputfile.is_open()){ // Error checking for both files
@@ -81,7 +79,7 @@ int main(int argc, char const *argv[]) {
     return 1;
   }
   std::cout << "Starting..." << '\n';
-  for (size_t i = 0; i < (results.st_size / 4); i++) { // Loop for # of bytes in file / 4
+  for (size_t i = 0; i < (filesize / 4); i++) { // Loop for # of bytes in file / 4
     inputfile.read((char*)bytevals, 4);
     value = bytestodec(bytevals); // Array to decimal: ENCRYPTED
     workdown(value, bytevals255); // Finds largest value of decreasing powers of 255
@@ -89,7 +87,7 @@ int main(int argc, char const *argv[]) {
     // delete[] bytevals255;
     // delete[] bytevals;
   }
-  int remaint = results.st_size % 4; // Remainder of bytes of file
+  int remaint = filesize % 4; // Remainder of bytes of file
   remaining = new unsigned char[remaint+1]; // Dynamically allocated array for bytes of remainder
   inputfile.read((char*)remaining, remaint);
   for (size_t i = 0; i < remaint; i++) {
