@@ -8,13 +8,13 @@ TL,DR: Keyless cypher in a 5:4 compression ratio.
 
 ## Compilation
 
-Clone the [repository](https://github.com/BodneyC/secdel.git) and cd into the folder:
+Clone the [repository](https://github.com/BodneyC/simple_keyless_cypher.git) and cd into the folder:
 
 ```
-git clone https://github.com/BodneyC/secdel.git`
-cd secdel/
+git clone https://github.com/BodneyC/simple_keyless_cypher.git`
+cd simple_keyless_cypher/
 ```
-Then, if in **Windows**, just call `comp.bat`. Elsewise for **Linux**, the line `#include <stat.h>` needs to be replaced with 	`#include <sys/stat.h>` in each file; then, use the Makefile (`make`).
+Then, if in **Windows**, just call `comp.bat`. Elsewise for **Linux** just use the Makefile (`make`).
 
 ## Usage
 
@@ -22,35 +22,6 @@ The program takes file-paths at the command line and fills them with a random va
 
 As the program creates a single byte array of the size of each file as default, the "-s" option can be used on larger files. The stream option ("-s") means that the program will at most use 1MiB for each file in turn for the deletion.
 
-**Command format (TCLAP output):**
+**Command format**
 
-	USAGE:
-
-	   main.exe  [-l <Integer>] [-r] [-s] [--] [--version] [-h] <String> ...
-
-
-	Where:
-
-	   -l <Integer>,  --levels <Integer>
-	     Number of times to wipe
-
-	   -r,  --rename
-	     Rename [-l] levels before deletion
-
-	   -s,  --stream
-	     Wipe in small chunks
-
-	   --,  --ignore_rest
-	     Ignores the rest of the labeled arguments following this flag.
-
-	   --version
-	     Displays version information and exits.
-
-	   -h,  --help
-	     Displays usage information and exits.
-
-	   <String>  (accepted multiple times)
-	     (required)  Input File-path
-
-
-	   Secure deletion tool for Windows
+    Usage: program <input_file> <output_file>
