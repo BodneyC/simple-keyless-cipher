@@ -4,6 +4,8 @@ This project is a C++ implementation of a simple encryption algorithm idea that 
 
 I realise that without a keystream it is essentially useless but it was a fun little project for learning C++ file IO. I have a couple of ideas to increase the security of the algorithm but they will have to wait for when I have the time.
 
+There is a second directory labelled 'modular', these are portable versions of the functions which can be included in other projects.
+
 TL,DR: Keyless cypher in a 5:4 compression ratio.
 
 ## Compilation
