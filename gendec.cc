@@ -46,17 +46,21 @@ int main(int argc, char const *argv[]) {
     std::cout << "Usage: program <input_file> <output_file>" << '\n';
     return 1;
   }
+
   std::ifstream encfile;
   encfile.open(argv[1], std::ios::binary); // Input file as binary
   encfile.seekg(0, encfile.end);
   filesize = encfile.tellg();
   encfile.seekg(0, encfile.beg);
+
   std::ofstream decfile;
   decfile.open(argv[2], std::ios::binary | std::ios::trunc); // Output file as binary and truncate
+
   if(!encfile.is_open() || !decfile.is_open()){ // Checking if both files are open
     std::cout << "Cannot open file" << '\n';
     return 1;
   }
+
   std::cout << "Starting..." << '\n';
 
   for (size_t i = 0; i < (filesize / 5); i++) { // Loop for # of bytes in file / 5
@@ -64,8 +68,6 @@ int main(int argc, char const *argv[]) {
     power255(bytevals, value255); // Provide byte-array and sum as though 255 tokens
     dectobytes(value255, bytevals255); // Take value of power255() and convert to byte-array
     decfile.write((char*)bytevals255, 4);
-    // delete[] bytevals255;
-    // delete[] bytevals;
   }
 
   int remaint = filesize % 5; // Remainder of bytes of file
@@ -74,6 +76,7 @@ int main(int argc, char const *argv[]) {
   for (size_t i = 0; i < remaint; i++) {
     remaining[i] ^= 0xBE; // Xor remainder with 0xBE (not really encryptions but meh)
   }
+
   decfile.write((char*)remaining, remaint);
   std::cout << "Program Completed" << '\n';
   delete[] bytevals255, bytevals;
