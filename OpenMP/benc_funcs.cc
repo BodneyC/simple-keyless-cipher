@@ -131,9 +131,6 @@ int dencrypt(std::string encfileString, std::string decfileString) {
 	filesize = encfile.tellg();
 	encfile.seekg(0, encfile.beg);
 
-
-	int64_t value255 = 0;
-
 	std::ofstream decfile;
 	decfile.open(decfileString, std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc); // Output file as binary and truncate
 	if(!decfile.is_open()){ // Checking if both files are open
@@ -147,11 +144,12 @@ int dencrypt(std::string encfileString, std::string decfileString) {
 		for (size_t i = 0; i < (filesize / 5); i++) { // Loop for # of bytes in file / 5
 			unsigned char bytevals[4];
 			unsigned char bytevals255[5];
+			int64_t value255 = 0;
 
 			#pragma omp ordered
 			{
 				encfile.seekg(i * 5, encfile.beg);
-				encfile.read((char*)bytevals, 4);
+				encfile.read((char*)bytevals, 5);
 			}
 
 			power255(bytevals, value255); // Provide byte-array and sum as though 255 tokens
