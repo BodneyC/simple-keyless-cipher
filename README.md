@@ -6,7 +6,7 @@ I realise that without a keystream it is essentially useless but it was a fun li
 
 There is a second directory labelled 'modular', these are portable versions of the functions which can be included in other projects.
 
-TL,DR: Keyless cypher in a 5:4 compression ratio.
+TL,DR: Keyless cypher in a 4:5 compression ratio.
 
 ## Compilation
 
