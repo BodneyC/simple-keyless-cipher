@@ -5,7 +5,7 @@ OUT_FILES=genenc gendec
 all: $(OUT_FILES)
 
 $(OUT_FILES): %: %.o
-	$(CC) $(CXXFLAGS) $< -o $@
+	$(CC) -o $@ $(CXXFLAGS) $<
 	
 .PHONY: clean cleaner
 
