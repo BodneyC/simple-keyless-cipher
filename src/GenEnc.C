@@ -7,10 +7,10 @@ GenEnc::GenEnc(CMDArgs& cmd_args)
 
 	int acc_255 = 1, acc_256 = 1;
 
-	for(int i = 0; i < sizeof(pow_255); i++) {
+	for(int i = 0; i < PRE_CHUNK_SIZE; i++) {
 		pow_255[i] = acc_255;
-		acc_255 *= 255ll;
 		pow_256[i] = acc_256;
+		acc_255 *= 255ll;
 		acc_256 *= 256ll;
 	}
 }
@@ -26,6 +26,7 @@ GenEnc::~GenEnc()
 int GenEnc::open_files()
 {
 	std::cout << "In open_files..." << std::endl;
+	std::cout << file_in << std::endl;
 	i_file.open(file_in.c_str(), std::ios::binary);
 	if(!i_file.good())
 		return FILE_IO_ERROR;
@@ -48,6 +49,7 @@ int GenEnc::open_files()
 int GenEnc::decrypt()
 {
 
+	return 0;
 }
 
 int GenEnc::encrypt()
@@ -62,7 +64,7 @@ int GenEnc::encrypt()
 	// Fill the remaining five
 	// NOTE: Likely to segfault on first try
 	if(i_file_size % PRE_CHUNK_SIZE) {
-		for(int i = 0; i < sizeof(byte_vals_255); i++) {
+		for(int i = 0; i < PRE_CHUNK_SIZE; i++) {
 			int8_t tmp_char;
 			if(!i_file.eof())
 				tmp_char = i_file.get();
@@ -73,7 +75,7 @@ int GenEnc::encrypt()
 		}
 
 		// Remainder
-		o_file.write((char*) &byte_vals_255, sizeof(byte_vals_255));
+		o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
 	}
 
 	// Bit array
@@ -95,9 +97,9 @@ void GenEnc::_write_size_little_endian()
 void GenEnc::_write_chunk()
 {
 	i_file.read((char*) &byte_vals, PRE_CHUNK_SIZE);
-	int64_t dec_value = _bytes_to_dec(/* 4, byte_vals */);
+	int64_t dec_value = _32_bit_to_dec();
 	_enc_workdown(dec_value);
-	o_file.write((char*) &byte_vals_255, sizeof(byte_vals_255));
+	o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
 }
 
 void GenEnc::_enc_workdown(int64_t dec_value)
@@ -124,7 +126,7 @@ void GenEnc::_enc_workdown(int64_t dec_value)
 	byte_vals_255[0] = dec_value;
 }
 
-int64_t GenEnc::_bytes_to_dec(int n_bytes)
+int64_t GenEnc::_32_bit_to_dec(int n_bytes)
 {
 	int64_t ret_val = 0;
 	int j = n_bytes - 1;
@@ -132,14 +134,11 @@ int64_t GenEnc::_bytes_to_dec(int n_bytes)
 	if(n_bytes == sizeof(int32_t))
 		for(int i = 0; i < n_bytes; i++, j--) 
 			ret_val += byte_vals[j] * pow_256[i];
-	else
-		for(int i = 0; i < n_bytes; i++, j--) 
-			ret_val += val_64_bit[j] * pow_256[i];
 
 	return ret_val;
 }
 
-void GenEnc::_dec_to_bytes(int64_t value, int n_bytes)
+void GenEnc::_dec_to_32_bit(int64_t value, int n_bytes)
 {
     int j = n_bytes - 1;
 

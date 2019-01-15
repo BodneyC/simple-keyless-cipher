@@ -43,14 +43,15 @@ int main(int argc, char** argv)
 	GenEnc gen_enc(cmd_args);
 	std::cout << "Initialised gen_enc successfully..." << std::endl;
 
-	gen_enc.open_files();
+	if(gen_enc.open_files())
+		return FILE_IO_ERROR;
 	std::cout << "Files opened successfully..." << std::endl;
 
-	if(cmd_args.enc_dec) {
-		gen_enc.decrypt();
-	} else {
-		gen_enc.encrypt();
-	}
+	// if(cmd_args.enc_dec) {
+	// 	gen_enc.decrypt();
+	// } else {
+	// 	gen_enc.encrypt();
+	// }
 
 	return 0;
 }
