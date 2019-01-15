@@ -1,16 +1,20 @@
 CC=g++
-CXXFLAGS=-g -std=c++11
-OUT_FILES=genenc gendec
+CFLAGS=-std=c++11 -lm
+INCLUDE=-I./includes
+SRC=$(wildcard src/*.C)
+OBJ=$(patsubst src/%.C, obj/%.o, $(SRC))
+PROG=./bin/genenc
 
-all: $(OUT_FILES)
+$(PROG): $(OBJ)
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $^
 
-$(OUT_FILES): %: %.o
-	$(CC) -o $@ $(CXXFLAGS) $<
-	
+obj/%.o: src/%.C
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $<
+
 .PHONY: clean cleaner
 
 clean:
-	rm *.o
+	rm $(OBJ)
 
 cleaner:
-	rm *.o $(OUT_FILES)
+	rm $(OBJ) $(PROG)
