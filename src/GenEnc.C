@@ -5,13 +5,14 @@ GenEnc::GenEnc(CMDArgs& cmd_args)
 	file_in = cmd_args.files[0];
 	file_out = cmd_args.files[1];
 
-	int acc_255 = 1, acc_256 = 1;
+	int64_t acc_255 = 1, acc_256 = 1;
 
-	for(int i = 0; i < PRE_CHUNK_SIZE; i++) {
+	for(int i = 0; i < PRO_CHUNK_SIZE; i++) {
 		pow_255[i] = acc_255;
 		pow_256[i] = acc_256;
 		acc_255 *= 255ll;
 		acc_256 *= 256ll;
+		std::cout << pow_255[i]<<std::endl;
 	}
 }
 
@@ -25,18 +26,13 @@ GenEnc::~GenEnc()
 
 int GenEnc::open_files()
 {
-	std::cout << "In open_files..." << std::endl;
-	std::cout << file_in << std::endl;
 	i_file.open(file_in.c_str(), std::ios::binary);
 	if(!i_file.good())
 		return FILE_IO_ERROR;
-	std::cout << "Opened i_file successfully..." << std::endl;
 
     i_file.seekg(0, i_file.end);
     i_file_size = i_file.tellg();
     i_file.seekg(0, i_file.beg);
-
-	std::cout << "Got i_file_size..." << std::endl;
 
 	o_file.open(file_out.c_str(), std::ios::binary | std::ios::trunc);
 
@@ -52,11 +48,20 @@ int GenEnc::decrypt()
 	return 0;
 }
 
+void GenEnc::_calc_o_file_size() 
+{
+	i_file.read((char*) val_64_bit, sizeof(int64_t));
+	o_file_size = _bytes_to_dec(8);
+}
+
 int GenEnc::encrypt()
 {
-	_write_size_little_endian();
+	_dec_to_bytes(i_file_size, 8);
+ 	o_file.write((char*) &val_64_bit, sizeof(int64_t));
+	std::cout << "Written filesize (little endian)..." << std::endl;
 
 	iterations = i_file_size / PRE_CHUNK_SIZE;
+	std::cout << iterations << " iterations required..." << std::endl;
 
 	for(int64_t i = 0; i < iterations; i++)
 		_write_chunk();
@@ -78,26 +83,30 @@ int GenEnc::encrypt()
 		o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
 	}
 
-	// Bit array
+	// Not currently writing: Bit array
+	for(int i = 0; i < 8 - (iterations % 8); i++)
+		bit_vector.push_back(0);
 	o_file.write((char*) &bit_vector[0], ceil(iterations / 8));
 
 	return 0;
 }
 
-void GenEnc::_write_size_little_endian()
-{
-	int8_t bytes[8];
-	for(int i = 7; i >= 0; i--) {
-		bytes[i] = i_file_size & 0xFF;
-		i_file_size >>= 8;
-	}
-	o_file.write((char*) &bytes, sizeof(int64_t));
-}
+// void GenEnc::_write_size_little_endian()
+// {
+// 	int64_t tmp_file_size = i_file_size;
+// 	int8_t bytes[8];
+// 	for(int i = 7; i >= 0; i--) {
+// 		bytes[i] = tmp_file_size & 0xFF;
+// 		tmp_file_size >>= 8;
+// 	}
+// 	o_file.write((char*) &bytes, sizeof(int64_t));
+// }
 
 void GenEnc::_write_chunk()
 {
-	i_file.read((char*) &byte_vals, PRE_CHUNK_SIZE);
-	int64_t dec_value = _32_bit_to_dec();
+	i_file.read((char*) byte_vals, PRE_CHUNK_SIZE);
+	std::cout << "Read first" << std::endl;
+	int64_t dec_value = _bytes_to_dec();
 	_enc_workdown(dec_value);
 	o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
 }
@@ -112,11 +121,10 @@ void GenEnc::_enc_workdown(int64_t dec_value)
 		bit_vector.push_back(0);
 	}
 
-	int j;
+	int64_t j;
 	for(int i = 3; i > 0; i--) {
 		j = 254;
-		int acc = j * pow_255[i];
-		while(dec_value - acc < 0)
+		while(dec_value - (j * pow_255[i]) < 0)
 			j--;
 		// NOTE: Likely to segfault on first try
 		byte_vals_255[i] = j;
@@ -126,24 +134,36 @@ void GenEnc::_enc_workdown(int64_t dec_value)
 	byte_vals_255[0] = dec_value;
 }
 
-int64_t GenEnc::_32_bit_to_dec(int n_bytes)
+int64_t GenEnc::_bytes_to_dec(int n_bytes)
 {
 	int64_t ret_val = 0;
 	int j = n_bytes - 1;
 
-	if(n_bytes == sizeof(int32_t))
+	if(n_bytes == sizeof(int64_t)) {
+		for(int i = 0; i < n_bytes; i++)
+			// Needs checking
+			std::memcpy((char*) &ret_val, val_64_bit, sizeof(int64_t)); 
+	} else {
 		for(int i = 0; i < n_bytes; i++, j--) 
 			ret_val += byte_vals[j] * pow_256[i];
+	}
 
 	return ret_val;
 }
 
-void GenEnc::_dec_to_32_bit(int64_t value, int n_bytes)
+void GenEnc::_dec_to_bytes(int64_t value, int n_bytes)
 {
     int j = n_bytes - 1;
 
-    for (int i = 0; i < n_bytes; i++, j--) {
-        val_64_bit[j] = value & 0xFF;
-        value = value >> 8;
-    }
+	if(n_bytes == sizeof(int64_t)) {
+	    for (int i = 0; i < n_bytes; i++, j--) {
+	        val_64_bit[j] = value & 0xFF;
+	        value >>= 8;
+	    }
+	} else {
+	    for (int i = 0; i < n_bytes; i++, j--) {
+	        byte_vals[j] = value & 0xFF;
+	        value >>= 8;
+	    }
+	}
 }

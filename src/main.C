@@ -2,9 +2,10 @@
 
 int process_args(int argc, char** argv, CMDArgs& cmd_args)
 {
-	int ind = 0;
+	int ind = 0, dash_check = 0;
 	for(int i = 1; i < argc; i++) {
 		if(argv[i][0] == '-') {
+			dash_check = 1;
 			if(argv[i][1] == 'e') {
 				if(cmd_args.enc_dec == 1)
 					return USAGE_ERROR;
@@ -24,6 +25,8 @@ int process_args(int argc, char** argv, CMDArgs& cmd_args)
 	}
 	if(cmd_args.files[0] == "") 
 		return USAGE_ERROR;
+	if(!dash_check)
+		cmd_args.enc_dec = 0;
 	return 0;
 }
 
@@ -35,7 +38,7 @@ void show_help()
 int main(int argc, char** argv)
 {
 	CMDArgs cmd_args;
-	if(process_args(argc, argv, cmd_args)) {
+	if(argc > 4 || process_args(argc, argv, cmd_args)) {
 		show_help(); 
 		return USAGE_ERROR;
 	}
@@ -47,11 +50,11 @@ int main(int argc, char** argv)
 		return FILE_IO_ERROR;
 	std::cout << "Files opened successfully..." << std::endl;
 
-	// if(cmd_args.enc_dec) {
-	// 	gen_enc.decrypt();
-	// } else {
-	// 	gen_enc.encrypt();
-	// }
+	if(!cmd_args.enc_dec) {
+		gen_enc.encrypt();
+	} else {
+		gen_enc.decrypt();
+	}
 
 	return 0;
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstdint>
+#include <cstdio>
 #include <fstream>
 #include <deque>
 #include <cmath>
@@ -23,18 +24,21 @@ class GenEnc {
 private:
 	std::deque< bool > bit_vector;
 	uint8_t byte_vals[4], byte_vals_255[4], val_64_bit[8];
-	int64_t i_file_size;
+	int64_t i_file_size, o_file_size;
 	int64_t iterations;
-	uint64_t pow_255[5], pow_256[5];
+	int64_t pow_255[5], pow_256[5];
 	std::ifstream i_file;
 	std::ofstream o_file;
 
 	// Enc Helpers
-	void _dec_to_32_bit(int64_t value, int n_bytes = sizeof(int32_t));
-	int64_t _32_bit_to_dec(int n_bytes = sizeof(int32_t));
+	void _dec_to_bytes(int64_t value, int n_bytes = sizeof(int32_t));
+	int64_t _bytes_to_dec(int n_bytes = sizeof(int32_t));
 	void _enc_workdown(int64_t dec_value);
 	void _write_chunk();
 	void _write_size_little_endian();
+
+	// Dec helpers
+	void _calc_o_file_size() ;
 
 public:
 	std::string file_in, file_out;
