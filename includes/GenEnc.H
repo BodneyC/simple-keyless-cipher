@@ -22,7 +22,7 @@ typedef struct CMDArgs {
 
 class GenEnc {
 private:
-	std::deque< bool > bit_deque;
+	int8_t* bit_arr;
 	uint8_t byte_vals[4], byte_vals_255[4], val_64_bit[8];
 	int64_t i_file_size, o_file_size;
 	int64_t iterations;
@@ -34,11 +34,11 @@ private:
 	void _dec_to_bytes(int64_t value, int n_bytes = sizeof(int32_t));
 	int64_t _bytes_to_dec(int n_bytes = sizeof(int32_t));
 	void _enc_workdown(int64_t dec_value);
-	void _write_chunk();
+	void _write_chunk(int64_t iter);
 	void _write_size_little_endian();
 
 	// Dec helpers
-	void _calc_o_file_size() ;
+	void _calc_o_file_size();
 
 public:
 	std::string file_in, file_out;

@@ -55,6 +55,9 @@ void GenEnc::_calc_o_file_size()
 
 int GenEnc::encrypt()
 {
+	int64_t n_byte_bit_arr = ceil(ceil(i_file_size / 4) / 8);
+	bit_arr = new int8_t[2]();
+
 	_dec_to_bytes(i_file_size, 8);
  	o_file.write((char*) &val_64_bit, sizeof(int64_t));
 	std::cout << "Written filesize (little endian)..." << std::endl;
@@ -63,7 +66,7 @@ int GenEnc::encrypt()
 	std::cout << iterations << " iterations required..." << std::endl;
 
 	for(int64_t i = 0; i < iterations; i++)
-		_write_chunk();
+		_write_chunk(i);
 
 	// Fill the remaining five
 	// NOTE: Likely to segfault on first try
@@ -82,13 +85,10 @@ int GenEnc::encrypt()
 		o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
 	}
 
-	// Not currently writing: Bit array
-	for(int i = 0; i < 8 - (iterations % 8); i++)
-		bit_deque.push_back(0);
-	o_file.write((char*) &bit_deque[0], ceil(i_file_size / 8));
+	o_file.write((char*) bit_arr, n_byte_bit_arr);
 
-for(int i = 0; i < bit_deque.size(); i++)
-	std::cout << bit_deque[i];
+	delete[] bit_arr;
+
 	return 0;
 }
 
@@ -103,10 +103,14 @@ for(int i = 0; i < bit_deque.size(); i++)
 // 	o_file.write((char*) &bytes, sizeof(int64_t));
 // }
 
-void GenEnc::_write_chunk()
+void GenEnc::_write_chunk(int64_t iter)
 {
 	i_file.read((char*) byte_vals, PRE_CHUNK_SIZE);
 	int64_t dec_value = _bytes_to_dec();
+	if(dec_value > pow_255[4]) {
+		bit_arr[iter / 8] += pow(2, 7 - (iter % 8));
+		dec_value -= pow_255[4];
+	}
 	_enc_workdown(dec_value);
 	o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
 }
@@ -114,13 +118,6 @@ void GenEnc::_write_chunk()
 void GenEnc::_enc_workdown(int64_t dec_value)
 {
 	// Highest byte is [01]
-	if(dec_value > pow_255[4]) {
-		bit_deque.push_back(1);
-		dec_value -= pow_255[4];
-	} else {
-		bit_deque.push_back(0);
-	}
-
 	int64_t j;
 	for(int i = 3; i > 0; i--) {
 		j = 254;
