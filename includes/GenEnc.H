@@ -1,5 +1,5 @@
 #include <iostream>
-#include <string>
+#include <cstring>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -22,7 +22,7 @@ typedef struct CMDArgs {
 
 class GenEnc {
 private:
-	std::deque< bool > bit_vector;
+	std::deque< bool > bit_deque;
 	uint8_t byte_vals[4], byte_vals_255[4], val_64_bit[8];
 	int64_t i_file_size, o_file_size;
 	int64_t iterations;

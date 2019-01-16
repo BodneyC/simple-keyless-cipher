@@ -12,7 +12,6 @@ GenEnc::GenEnc(CMDArgs& cmd_args)
 		pow_256[i] = acc_256;
 		acc_255 *= 255ll;
 		acc_256 *= 256ll;
-		std::cout << pow_255[i]<<std::endl;
 	}
 }
 
@@ -85,9 +84,11 @@ int GenEnc::encrypt()
 
 	// Not currently writing: Bit array
 	for(int i = 0; i < 8 - (iterations % 8); i++)
-		bit_vector.push_back(0);
-	o_file.write((char*) &bit_vector[0], ceil(iterations / 8));
+		bit_deque.push_back(0);
+	o_file.write((char*) &bit_deque[0], ceil(i_file_size / 8));
 
+for(int i = 0; i < bit_deque.size(); i++)
+	std::cout << bit_deque[i];
 	return 0;
 }
 
@@ -105,7 +106,6 @@ int GenEnc::encrypt()
 void GenEnc::_write_chunk()
 {
 	i_file.read((char*) byte_vals, PRE_CHUNK_SIZE);
-	std::cout << "Read first" << std::endl;
 	int64_t dec_value = _bytes_to_dec();
 	_enc_workdown(dec_value);
 	o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
@@ -115,10 +115,10 @@ void GenEnc::_enc_workdown(int64_t dec_value)
 {
 	// Highest byte is [01]
 	if(dec_value > pow_255[4]) {
-		bit_vector.push_back(1);
+		bit_deque.push_back(1);
 		dec_value -= pow_255[4];
 	} else {
-		bit_vector.push_back(0);
+		bit_deque.push_back(0);
 	}
 
 	int64_t j;

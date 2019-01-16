@@ -4,3 +4,4 @@ genenc
 modular
 *.exe
 test_files
+scripts/*.enc
