@@ -56,6 +56,9 @@ int GenEnc::decrypt()
 		_dec_write_chunk(i);
 
 	// NOTE: Remainder is written as four bytes, and so will give a spurious 4 - remainder x00s
+	if(o_file_size % PRE_CHUNK_SIZE) {
+		_dec_write_chunk(iterations);
+	}
 
 	delete[] bit_arr;
 
@@ -66,15 +69,14 @@ void GenEnc::_dec_write_chunk(int64_t iter)
 {
 	i_file.read((char*) byte_vals_255, PRE_CHUNK_SIZE);
 	int64_t dec_value = _bytes_to_dec(255);
-	if(bit_arr[iter / 8] >> (iter % 8) & 1)
-		dec_value += pow_255[4];
+	if(iter != iterations)
+		if(bit_arr[iter / 8] >> (iter % 8) & 1)
+			dec_value += pow_255[4];
 	_dec_to_bytes(dec_value, 4);
-	o_file.write((char*) &byte_vals, sizeof(byte_vals));
-}
-
-void GenEnc::_dec_write_chunk_remainder()
-{
-
+	if(iter != iterations)
+		o_file.write((char*) &byte_vals, sizeof(byte_vals));
+	else
+		o_file.write((char*) &byte_vals, o_file_size % PRE_CHUNK_SIZE);
 }
 
 void GenEnc::_read_bit_arr_from_file()
@@ -190,14 +192,3 @@ void GenEnc::_dec_to_bytes(int64_t value, int n_bytes)
 	    }
 	}
 }
-
-// void GenEnc::_write_size_little_endian()
-// {
-// 	int64_t tmp_file_size = i_file_size;
-// 	int8_t bytes[8];
-// 	for(int i = 7; i >= 0; i--) {
-// 		bytes[i] = tmp_file_size & 0xFF;
-// 		tmp_file_size >>= 8;
-// 	}
-// 	o_file.write((char*) &bytes, sizeof(int64_t));
-// }

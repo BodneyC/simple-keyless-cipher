@@ -31,18 +31,18 @@ private:
 	std::ofstream o_file;
 
 	// Enc Helpers
-	void _dec_to_bytes(int64_t value, int n_bytes = sizeof(int32_t));
-	int64_t _bytes_to_dec(int pow_val);
 	void _enc_workdown(int64_t dec_value);
 	void _enc_write_chunk(int64_t iter);
-	void _write_size_little_endian();
 	void _enc_write_chunk_remainder();
 
 	// Dec helpers
 	void _dec_write_chunk(int64_t iter);
-	void _dec_write_chunk_remainder();
 	void _read_bit_arr_from_file();
 	void _calc_o_file_size();
+
+	// General helpers
+	int64_t _bytes_to_dec(int pow_val);
+	void _dec_to_bytes(int64_t value, int n_bytes = sizeof(int32_t));
 
 public:
 	std::string file_in, file_out;
