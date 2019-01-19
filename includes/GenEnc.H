@@ -25,19 +25,23 @@ private:
 	int8_t* bit_arr;
 	uint8_t byte_vals[4], byte_vals_255[4], val_64_bit[8];
 	int64_t i_file_size, o_file_size;
-	int64_t iterations;
+	int64_t iterations, bit_arr_offset;
 	int64_t pow_255[5], pow_256[5];
 	std::ifstream i_file;
 	std::ofstream o_file;
 
 	// Enc Helpers
 	void _dec_to_bytes(int64_t value, int n_bytes = sizeof(int32_t));
-	int64_t _bytes_to_dec(int n_bytes = sizeof(int32_t));
+	int64_t _bytes_to_dec(int pow_val);
 	void _enc_workdown(int64_t dec_value);
-	void _write_chunk(int64_t iter);
+	void _enc_write_chunk(int64_t iter);
 	void _write_size_little_endian();
+	void _enc_write_chunk_remainder();
 
 	// Dec helpers
+	void _dec_write_chunk(int64_t iter);
+	void _dec_write_chunk_remainder();
+	void _read_bit_arr_from_file();
 	void _calc_o_file_size();
 
 public:

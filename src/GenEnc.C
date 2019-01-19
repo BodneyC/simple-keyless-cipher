@@ -9,8 +9,8 @@ GenEnc::GenEnc(CMDArgs& cmd_args)
 
 	for(int i = 0; i < PRO_CHUNK_SIZE; i++) {
 		pow_255[i] = acc_255;
-		pow_256[i] = acc_256;
 		acc_255 *= 255ll;
+		pow_256[i] = acc_256;
 		acc_256 *= 256ll;
 	}
 }
@@ -43,47 +43,72 @@ int GenEnc::open_files()
 
 int GenEnc::decrypt()
 {
+	_calc_o_file_size();
+
+	bit_arr_offset = 8 + o_file_size + (o_file_size % PRE_CHUNK_SIZE);
+	bit_arr = new int8_t[i_file_size - bit_arr_offset];
+
+	_read_bit_arr_from_file();
+
+	iterations = o_file_size / PRE_CHUNK_SIZE;
+
+	for(int64_t i = 0; i < iterations; i++) 
+		_dec_write_chunk(i);
+
+	// NOTE: Remainder is written as four bytes, and so will give a spurious 4 - remainder x00s
+
+	delete[] bit_arr;
 
 	return 0;
 }
 
+void GenEnc::_dec_write_chunk(int64_t iter)
+{
+	i_file.read((char*) byte_vals_255, PRE_CHUNK_SIZE);
+	int64_t dec_value = _bytes_to_dec(255);
+	if(bit_arr[iter / 8] >> (iter % 8) & 1)
+		dec_value += pow_255[4];
+	_dec_to_bytes(dec_value, 4);
+	o_file.write((char*) &byte_vals, sizeof(byte_vals));
+}
+
+void GenEnc::_dec_write_chunk_remainder()
+{
+
+}
+
+void GenEnc::_read_bit_arr_from_file()
+{
+	int64_t curr_offset = i_file.tellg();
+	i_file.seekg(bit_arr_offset, i_file.beg);
+	i_file.read((char*) &bit_arr, sizeof(bit_arr)); 
+	i_file.seekg(curr_offset, i_file.beg);
+}
+
 void GenEnc::_calc_o_file_size() 
 {
-	i_file.read((char*) val_64_bit, sizeof(int64_t));
-	o_file_size = _bytes_to_dec(8);
+	i_file.read((char*) &o_file_size, sizeof(o_file_size));
 }
 
 int GenEnc::encrypt()
 {
-	int64_t n_byte_bit_arr = ceil(ceil(i_file_size / 4) / 8);
-	bit_arr = new int8_t[2]();
+	int64_t n_byte_bit_arr = ceil(ceil((double) i_file_size / 4) / 8);
+	bit_arr = new int8_t[n_byte_bit_arr]();
+	iterations = i_file_size / PRE_CHUNK_SIZE;
 
+	std::cout << iterations << " iterations required..." << std::endl <<
+		i_file_size % PRE_CHUNK_SIZE << " remainder..." << std::endl;
+
+	// Write filesize
 	_dec_to_bytes(i_file_size, 8);
- 	o_file.write((char*) &val_64_bit, sizeof(int64_t));
+ 	o_file.write((char*) &val_64_bit, sizeof(val_64_bit));
 	std::cout << "Written filesize (little endian)..." << std::endl;
 
-	iterations = i_file_size / PRE_CHUNK_SIZE;
-	std::cout << iterations << " iterations required..." << std::endl;
-
 	for(int64_t i = 0; i < iterations; i++)
-		_write_chunk(i);
+		_enc_write_chunk(i);
 
-	// Fill the remaining five
-	// NOTE: Likely to segfault on first try
-	if(i_file_size % PRE_CHUNK_SIZE) {
-		for(int i = 0; i < PRE_CHUNK_SIZE; i++) {
-			int8_t tmp_char;
-			if(!i_file.eof())
-				tmp_char = i_file.get();
-			if(i_file.eof())
-				byte_vals_255[i] = 0;
-			else
-				byte_vals_255[i] = tmp_char;
-		}
-
-		// Remainder
-		o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
-	}
+	if(i_file_size % PRE_CHUNK_SIZE)
+		_enc_write_chunk_remainder();
 
 	o_file.write((char*) bit_arr, n_byte_bit_arr);
 
@@ -92,23 +117,27 @@ int GenEnc::encrypt()
 	return 0;
 }
 
-// void GenEnc::_write_size_little_endian()
-// {
-// 	int64_t tmp_file_size = i_file_size;
-// 	int8_t bytes[8];
-// 	for(int i = 7; i >= 0; i--) {
-// 		bytes[i] = tmp_file_size & 0xFF;
-// 		tmp_file_size >>= 8;
-// 	}
-// 	o_file.write((char*) &bytes, sizeof(int64_t));
-// }
+void GenEnc::_enc_write_chunk_remainder()
+{
+	for(int i = 0; i < PRE_CHUNK_SIZE; i++) {
+		int8_t tmp_char;
+		if(!i_file.eof())
+			tmp_char = i_file.get();
+		if(i_file.eof())
+			byte_vals_255[i] = 0;
+		else
+			byte_vals_255[i] = tmp_char;
+	}
+	_enc_workdown(_bytes_to_dec(256));
+	o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
+}
 
-void GenEnc::_write_chunk(int64_t iter)
+void GenEnc::_enc_write_chunk(int64_t iter)
 {
 	i_file.read((char*) byte_vals, PRE_CHUNK_SIZE);
-	int64_t dec_value = _bytes_to_dec();
+	int64_t dec_value = _bytes_to_dec(256);
 	if(dec_value > pow_255[4]) {
-		bit_arr[iter / 8] += pow(2, 7 - (iter % 8));
+		bit_arr[iter / 8] += pow(2, iter % 8);
 		dec_value -= pow_255[4];
 	}
 	_enc_workdown(dec_value);
@@ -118,9 +147,8 @@ void GenEnc::_write_chunk(int64_t iter)
 void GenEnc::_enc_workdown(int64_t dec_value)
 {
 	// Highest byte is [01]
-	int64_t j;
 	for(int i = 3; i > 0; i--) {
-		j = 254;
+		int64_t j = 254;
 		while(dec_value - (j * pow_255[i]) < 0)
 			j--;
 		// NOTE: Likely to segfault on first try
@@ -131,19 +159,17 @@ void GenEnc::_enc_workdown(int64_t dec_value)
 	byte_vals_255[0] = dec_value;
 }
 
-int64_t GenEnc::_bytes_to_dec(int n_bytes)
+int64_t GenEnc::_bytes_to_dec(int pow_num)
 {
 	int64_t ret_val = 0;
-	int j = n_bytes - 1;
+	int j = PRE_CHUNK_SIZE - 1;
 
-	if(n_bytes == sizeof(int64_t)) {
-		for(int i = 0; i < n_bytes; i++)
-			// Needs checking
-			std::memcpy((char*) &ret_val, val_64_bit, sizeof(int64_t)); 
-	} else {
-		for(int i = 0; i < n_bytes; i++, j--) 
+	if(pow_num == 256)
+		for(int i = 0; i < PRE_CHUNK_SIZE; i++, j--) 
 			ret_val += byte_vals[j] * pow_256[i];
-	}
+	else
+		for(int i = 0; i < PRE_CHUNK_SIZE; i++, j--) 
+			ret_val += byte_vals_255[i] * pow_255[i];
 
 	return ret_val;
 }
@@ -164,3 +190,14 @@ void GenEnc::_dec_to_bytes(int64_t value, int n_bytes)
 	    }
 	}
 }
+
+// void GenEnc::_write_size_little_endian()
+// {
+// 	int64_t tmp_file_size = i_file_size;
+// 	int8_t bytes[8];
+// 	for(int i = 7; i >= 0; i--) {
+// 		bytes[i] = tmp_file_size & 0xFF;
+// 		tmp_file_size >>= 8;
+// 	}
+// 	o_file.write((char*) &bytes, sizeof(int64_t));
+// }
