@@ -54,15 +54,14 @@ int GenEnc::decrypt()
 
 	_read_bit_arr_from_file();
 
-	for(int i = 0; i < sizeof(bit_arr); i++)
-	std::cout << (unsigned)bit_arr[i] << std::endl;
-
 	iterations = o_file_size / PRE_CHUNK_SIZE;
+
+	std::cout << iterations << " iterations required..." << std::endl <<
+		o_file_size % PRE_CHUNK_SIZE << " remainder..." << std::endl;
 
 	for(int64_t i = 0; i < iterations; i++) 
 		_dec_write_chunk(i);
 
-	// NOTE: Remainder is written as four bytes, and so will give a spurious 4 - remainder x00s
 	if(o_file_size % PRE_CHUNK_SIZE) {
 		_dec_write_chunk(iterations);
 	}
@@ -90,7 +89,7 @@ void GenEnc::_read_bit_arr_from_file()
 	int64_t curr_offset = i_file.tellg();
 	i_file.seekg(bit_arr_offset, i_file.beg);
 	i_file.read((char*) bit_arr, i_file_size - bit_arr_offset); 
-	i_file.seekg(curr_offset, i_file.beg);
+	i_file.seekg(8, i_file.beg);
 }
 
 void GenEnc::_calc_o_file_size() 
@@ -135,9 +134,9 @@ void GenEnc::_enc_write_chunk_remainder()
 		if(!i_file.eof())
 			tmp_char = i_file.get();
 		if(i_file.eof())
-			byte_vals_255[i] = 0;
+			byte_vals[i] = 0;
 		else
-			byte_vals_255[i] = tmp_char;
+			byte_vals[i] = tmp_char;
 	}
 	int64_t dec_value = _bytes_to_dec(256);
 	if(dec_value > pow_255[4]) {
@@ -162,29 +161,25 @@ void GenEnc::_enc_write_chunk(int64_t iter)
 
 void GenEnc::_enc_workdown(int64_t dec_value)
 {
-	// Highest byte is [01]
 	for(int i = 3; i > 0; i--) {
 		int64_t j = 254;
 		while(dec_value - (j * pow_255[i]) < 0)
 			j--;
-		// NOTE: Likely to segfault on first try
 		byte_vals_255[i] = j;
 		dec_value -= (j * pow_255[i]);
 	}
-
 	byte_vals_255[0] = dec_value;
 }
 
 int64_t GenEnc::_bytes_to_dec(int pow_num)
 {
 	int64_t ret_val = 0;
-	int j = PRE_CHUNK_SIZE - 1;
 
 	if(pow_num == 256)
-		for(int i = 0; i < PRE_CHUNK_SIZE; i++, j--) 
+		for(int i = 0, j = PRE_CHUNK_SIZE - 1; i < PRE_CHUNK_SIZE; i++, j--) 
 			ret_val += byte_vals[j] * pow_256[i];
 	else
-		for(int i = 0; i < PRE_CHUNK_SIZE; i++, j--) 
+		for(int i = 0; i < PRE_CHUNK_SIZE; i++) 
 			ret_val += byte_vals_255[i] * pow_255[i];
 
 	return ret_val;

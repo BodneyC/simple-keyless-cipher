@@ -17,7 +17,7 @@ typedef struct CMDArgs {
 	std::string files[2];
 	int enc_dec;
 
-	CMDArgs(): files{ "", "a.enc" }, enc_dec(-1) {}
+	CMDArgs(): files{ "", "a.out" }, enc_dec(-1) {}
 } CMDArgs;
 
 class GenEnc {
