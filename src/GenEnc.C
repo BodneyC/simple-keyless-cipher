@@ -1,16 +1,20 @@
 #include "GenEnc.H"
 
-GenEnc::GenEnc(CMDArgs& cmd_args) 
+GenEnc::GenEnc(CMDArgs& cmd_args): o_file_size(0)
 {
 	file_in = cmd_args.files[0];
 	file_out = cmd_args.files[1];
 
-	int64_t acc_255 = 1, acc_256 = 1;
+	uint64_t acc_255 = 1, acc_256 = 1;
 
 	for(int i = 0; i < PRO_CHUNK_SIZE; i++) {
 		pow_255[i] = acc_255;
 		acc_255 *= 255ll;
-		pow_256[i] = acc_256;
+		pow_256[i] = pow_val_64_bit[i] = acc_256;
+		acc_256 *= 256ll;
+	}
+	for(int i = PRO_CHUNK_SIZE; i < 8; i++) {
+		pow_val_64_bit[i] = acc_256;
 		acc_256 *= 256ll;
 	}
 }
@@ -46,9 +50,12 @@ int GenEnc::decrypt()
 	_calc_o_file_size();
 
 	bit_arr_offset = 8 + o_file_size + (o_file_size % PRE_CHUNK_SIZE);
-	bit_arr = new int8_t[i_file_size - bit_arr_offset];
+	bit_arr = new int8_t[i_file_size - bit_arr_offset]();
 
 	_read_bit_arr_from_file();
+
+	for(int i = 0; i < sizeof(bit_arr); i++)
+	std::cout << (unsigned)bit_arr[i] << std::endl;
 
 	iterations = o_file_size / PRE_CHUNK_SIZE;
 
@@ -69,9 +76,8 @@ void GenEnc::_dec_write_chunk(int64_t iter)
 {
 	i_file.read((char*) byte_vals_255, PRE_CHUNK_SIZE);
 	int64_t dec_value = _bytes_to_dec(255);
-	if(iter != iterations)
-		if(bit_arr[iter / 8] >> (iter % 8) & 1)
-			dec_value += pow_255[4];
+	if(bit_arr[iter / 8] >> (iter % 8) & 1)
+		dec_value += pow_255[4];
 	_dec_to_bytes(dec_value, 4);
 	if(iter != iterations)
 		o_file.write((char*) &byte_vals, sizeof(byte_vals));
@@ -83,13 +89,16 @@ void GenEnc::_read_bit_arr_from_file()
 {
 	int64_t curr_offset = i_file.tellg();
 	i_file.seekg(bit_arr_offset, i_file.beg);
-	i_file.read((char*) &bit_arr, sizeof(bit_arr)); 
+	i_file.read((char*) bit_arr, i_file_size - bit_arr_offset); 
 	i_file.seekg(curr_offset, i_file.beg);
 }
 
 void GenEnc::_calc_o_file_size() 
 {
-	i_file.read((char*) &o_file_size, sizeof(o_file_size));
+	i_file.read((char*) &val_64_bit, sizeof(o_file_size));
+
+	for(int i = 0, j = 7; i < 8; i++, j--)
+		o_file_size += val_64_bit[j] * pow_val_64_bit[i];
 }
 
 int GenEnc::encrypt()
@@ -130,7 +139,12 @@ void GenEnc::_enc_write_chunk_remainder()
 		else
 			byte_vals_255[i] = tmp_char;
 	}
-	_enc_workdown(_bytes_to_dec(256));
+	int64_t dec_value = _bytes_to_dec(256);
+	if(dec_value > pow_255[4]) {
+		bit_arr[iterations / 8] += pow(2, iterations % 8);
+		dec_value -= pow_255[4];
+	}
+	_enc_workdown(dec_value);
 	o_file.write((char*) &byte_vals_255, PRE_CHUNK_SIZE);
 }
 

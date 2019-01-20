@@ -24,6 +24,7 @@ class GenEnc {
 private:
 	int8_t* bit_arr;
 	uint8_t byte_vals[4], byte_vals_255[4], val_64_bit[8];
+	uint64_t pow_val_64_bit[8];
 	int64_t i_file_size, o_file_size;
 	int64_t iterations, bit_arr_offset;
 	int64_t pow_255[5], pow_256[5];

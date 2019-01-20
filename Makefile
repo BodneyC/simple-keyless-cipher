@@ -11,10 +11,14 @@ $(PROG): $(OBJ)
 obj/%.o: src/%.C
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $<
 
-.PHONY: run clean cleaner
+.PHONY: run_enc run_dec clean cleaner
 
-run:
+run_enc:
 	$(PROG) ./scripts/a.out ./scripts/a.enc
+
+run_dec:
+	$(PROG) -d ./scripts/a.enc ./scripts/a.dec
+
 clean:
 	rm $(OBJ)
 
