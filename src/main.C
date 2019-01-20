@@ -32,7 +32,7 @@ int process_args(int argc, char** argv, CMDArgs& cmd_args)
 
 void show_help() 
 {
-	std::cout << "Usage: program [-[ed]] <input_file> [<output_file>]" << std::endl;
+	std::cout << "Usage: genenc [-[ed]] <input_file> [<output_file>]" << std::endl;
 }
 
 int main(int argc, char** argv)
