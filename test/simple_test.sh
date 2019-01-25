@@ -1,5 +1,10 @@
 #!/bin/bash
 
+IN_FILE="$1"
+if [[ -z "$IN_FILE" ]]; then
+    IN_FILE="./src/main.C"
+fi
+
 if [[ $(pwd) =~ test$ ]]; then
 	cd ..
 fi
@@ -11,12 +16,12 @@ if [[ $? -ne 0 ]]; then
 	exit
 fi
 
-./bin/genenc ./src/main.C ./test/test_a.enc
+./bin/genenc "$IN_FILE" ./test/test_a.enc
 ./bin/genenc -d ./test/test_a.enc ./test/test_a.dec
 
-DIFF=$(diff ./src/main.C ./test/test_a.dec)
+DIFF=$(diff "$IN_FILE" ./test/test_a.dec)
 
-if [[ "$DIFF" -ne "" ]]; then
+if ! cmp -s "$IN_FILE" test/test_a.dec; then
 	echo "Test failed:"
 	echo "$DIFF"
 else
