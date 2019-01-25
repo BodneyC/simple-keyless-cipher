@@ -49,7 +49,8 @@ int GenEnc::decrypt()
 {
 	_calc_o_file_size();
 
-	bit_arr_offset = 8 + o_file_size + (o_file_size % PRE_CHUNK_SIZE);
+	bit_arr_offset = 8 + o_file_size + (4 - (o_file_size % PRE_CHUNK_SIZE));
+	std::cout << o_file_size<<std::endl;
 	bit_arr = new int8_t[i_file_size - bit_arr_offset]();
 
 	_read_bit_arr_from_file();
@@ -86,7 +87,6 @@ void GenEnc::_dec_write_chunk(int64_t iter)
 
 void GenEnc::_read_bit_arr_from_file()
 {
-	int64_t curr_offset = i_file.tellg();
 	i_file.seekg(bit_arr_offset, i_file.beg);
 	i_file.read((char*) bit_arr, i_file_size - bit_arr_offset); 
 	i_file.seekg(8, i_file.beg);

@@ -1,56 +1,60 @@
-ojdlude <iostre]s:)eocluda&8doznjjm:
-#in_rqea&8doz`jnt>
-#include <cstdio>
-#include <fstream>
-#include <deque>
-#include <cmath>
+#include "GenEnc.H"
 
-#define USAGE_ERROR -1
-#define PROG_FAIL -2
-#define FILE_IO_ERROR -3
+int process_args(int argc, char** argv, CMDArgs& cmd_args)
+{
+	int ind = 0, dash_check = 0;
+	for(int i = 1; i < argc; i++) {
+		if(argv[i][0] == '-') {
+			dash_check = 1;
+			if(argv[i][1] == 'e') {
+				if(cmd_args.enc_dec == 1)
+					return USAGE_ERROR;
+				cmd_args.enc_dec = 0;
+				continue;
+			}
+			if(argv[i][1] == 'd') {
+				if(cmd_args.enc_dec == 0)
+					return USAGE_ERROR;
+				cmd_args.enc_dec = 1;
+				continue;
+			}
+			return USAGE_ERROR;
+		}
+		cmd_args.files[ind] = argv[i];
+		ind++;
+	}
+	if(cmd_args.files[0] == "") 
+		return USAGE_ERROR;
+	if(!dash_check)
+		cmd_args.enc_dec = 0;
+	return 0;
+}
 
-#define PRE_CHUNK_SIZE 4
-#define PRO_CHUNK_SIZE 5
+void show_help() 
+{
+	std::cout << "Usage: genenc [-[ed]] <input_file> [<output_file>]" << std::endl;
+}
 
-typedef struct CMDArgs {
-	std::string files[2];
-	int enc_dec;
+int main(int argc, char** argv)
+{
+	CMDArgs cmd_args;
+	if(argc > 4 || process_args(argc, argv, cmd_args)) {
+		show_help(); 
+		return USAGE_ERROR;
+	}
 
-	CMDArgs(): files{ "", "a.out" }, enc_dec(-1) {}
-} CMDArgs;
+	GenEnc gen_enc(cmd_args);
+	std::cout << "Initialised gen_enc successfully..." << std::endl;
 
-class GenEnc {
-private:
-	int8_t* bit_arr;
-	uint8_t byte_vals[4], byte_vals_255[4], val_64_bit[8];
-	uint64_t pow_val_64_bit[8];
-	int64_t i_file_size, o_file_size;
-	int64_t iterations, bit_arr_offset;
-	int64_t pow_255[5], pow_256[5];
-	std::ifstream i_file;
-	std::ofstream o_file;
+	if(gen_enc.open_files())
+		return FILE_IO_ERROR;
+	std::cout << "Files opened successfully..." << std::endl;
 
-	// Enc Helpers
-	void _enc_workdown(int64_t dec_value);
-	void _enc_write_chunk(int64_t iter);
-	void _enc_write_chunk_remainder();
+	if(!cmd_args.enc_dec) {
+		gen_enc.encrypt();
+	} else {
+		gen_enc.decrypt();
+	}
 
-	// Dec helpers
-	void _dec_write_chunk(int64_t iter);
-	void _read_bit_arr_from_file();
-	void _calc_o_file_size();
-
-	// General helpers
-	int64_t _bytes_to_dec(int pow_val);
-	void _dec_to_bytes(int64_t value, int n_bytes = sizeof(int32_t));
-
-public:
-	std::string file_in, file_out;
-
-	GenEnc(CMDArgs& cmd_args);
-	~GenEnc();
-	
-	int open_files();
-	int encrypt();
-	int decrypt();
-};
+	return 0;
+}
